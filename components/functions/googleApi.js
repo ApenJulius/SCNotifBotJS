@@ -4,7 +4,7 @@ const { GoogleAuth } = require("google-auth-library");
 const DEVspreadsheet = process.env.DEVsheet;
 const prod = process.env.PRODsheet;
 
-const spreadsheetId = DEVspreadsheet;
+const spreadsheetId = prod || DEVspreadsheet;
 
 async function updateGoogleSheet(data) {
     const auth = new GoogleAuth({
