@@ -1,4 +1,3 @@
-const bot = require("../../src/botMain");
 const classes = require("../../classes.json");
 const { cLog } = require("../functions/cLog");
 const { waitingForReviewRow } = require("../buttons");
@@ -11,18 +10,25 @@ async function createWaitingForReviewMessage(interaction,charInfo,
   consentInput,
   linkToUserPage,
   inputName,
-  server
+  server,
+  mode = null
 ) {
   const member = await interaction.guild.members.fetch(interaction.user.id);
-  const submissionChannel = await bot.channels.fetch(server.submissionChannelId);
+  const submissionChannel = await interaction.client.channels.fetch(server[mode].submissionChannelId);
   let description = null;
   if(server.serverName == "WoW") {
     if (charInfo == null) {
       description = `E-mail:\u00A0\u00A0\u00A0\u00A0\u00A0**${reviewHistory.userEmail}**\nArmory:\u00A0\u00A0\u00A0\u00A0**[${inputName}](${linkToUserPage})**\n\n**Failed to get data from Blizzard**`;
     } else {
-      description = `E-mail:\u00A0\u00A0\u00A0\u00A0\u00A0**${reviewHistory.userEmail}**\nArmory:\u00A0\u00A0\u00A0\u00A0**[${charInfo.characterName}](${linkToUserPage})**\nItem level:\u00A0**${charInfo.armorLevel}**\nClass:\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0**${charInfo.characterClass}**\nRegion:\u00A0\u00A0\u00A0\u00A0**${charInfo.characterRegion}**\n\nI consent to my review being used by Skill-Capped: ${consentInput}  `;
-      description = addWoWRoleStats(charInfo, description)
+      description = `E-mail:\u00A0\u00A0\u00A0\u00A0\u00A0**${reviewHistory.userEmail}**\nArmory:\u00A0\u00A0\u00A0\u00A0**[${charInfo.characterName}](${linkToUserPage})**\nItem level:\u00A0**${charInfo.armorLevel}**\nClass:\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0**${charInfo.characterClass}**\nRegion:\u00A0\u00A0\u00A0\u00A0**${charInfo.characterRegion}**`;
+      if (mode == "wowpvp") {
+      description = addWoWPVPRoleStats(charInfo, description)
+    } else if (mode == "wowpve") {
+      description += `\nSpecialization:${noBreakSpace.repeat(5)}**${charInfo.specialization}**`;
+      description += `\nMythic+ Score:${noBreakSpace.repeat(5)}**${charInfo.mythicPlusScore}**`;
     }
+  }
+  description += `\n\nI consent to my review being used by Skill-Capped: **${consentInput}**  `;
   }
   else if(server.serverName == "Valorant") {
     if (charInfo == null) {
@@ -34,93 +40,35 @@ async function createWaitingForReviewMessage(interaction,charInfo,
 
   description += `\n\nClip to review: **${reviewHistory.clipLink}**`;
   description += `\nWhat they want to improve on: **${improvementInput}**`;
-  await submissionChannel.send({embeds: [await createWaitingForReviewEmbed(interaction, reviewHistory, member, description)], components:[waitingForReviewRow]})
+  await submissionChannel.send({embeds: [await createWaitingForReviewEmbed(interaction, reviewHistory, member, description)], components:[waitingForReviewRow(mode)]})
   cLog(["Successfully sent submission"], {
     guild: interaction.guildId,
     subProcess: "CreateWaitingForReview",
   });
 }
 
-module.exports = {createWaitingForReviewMessage};
 
 
-function addWoWRoleStats(charInfo, description) {
+function addWoWPVPRoleStats(charInfo, description) {
   const maxLengt = 60;
-  if (charInfo.twoVtwoRating != null) {
-    let n = `\n\n__2v2:${noBreakSpace.repeat()}**${
-      charInfo.twoVtwoRating
-    }**__`.length;
-    description += `\n\n__2v2:${noBreakSpace.repeat(65 - n)}**${
-      charInfo.twoVtwoRating
-    }**__`;
+
+  const addRating = (rating, label, index) => {
+    if (rating != null && rating != undefined) {
+      let n = `\n\n__${label}:${noBreakSpace.repeat()}**${rating}**__`.length;
+      description += `\n\n__${label}:${noBreakSpace.repeat(maxLengt - n)}**${rating}**__`;
+    }
+  };
+
+  addRating(charInfo.twoVtwoRating, '2v2');
+  addRating(charInfo.threeVthreeRating, '3v3');
+
+  for (let i = 0; i < 4; i++) {
+    const rating = charInfo[`soloShuffleSpec${i + 1}Rating`];
+    const label = `Shuffle ${classes[charInfo.characterClass][i]}`;
+    addRating(rating, label);
   }
-  if (charInfo.threeVthreeRating != null) {
-    let n = `\n\n__3v3:${noBreakSpace.repeat()}**${
-      charInfo.threeVthreeRating
-    }**__`.length;
-    description += `\n\n__3v3:${noBreakSpace.repeat(65 - n)}**${
-      charInfo.threeVthreeRating
-    }**__`;
-  }
-  if (
-    charInfo.soloShuffleSpec1Rating != null &&
-    charInfo.soloShuffleSpec1Rating != undefined
-  ) {
-    let n = `\n\n__Shuffle ${
-      classes[charInfo.characterClass][0]
-    }:${noBreakSpace.repeat()}**${
-      charInfo.soloShuffleSpec1Rating
-    }**__`.length;
-    description += `\n\n__Shuffle ${
-      classes[charInfo.characterClass][0]
-    }:${noBreakSpace.repeat(maxLengt - n)}**${
-      charInfo.soloShuffleSpec1Rating
-    }**__`;
-  }
-  if (
-    charInfo.soloShuffleSpec2Rating != null &&
-    charInfo.soloShuffleSpec2Rating != undefined
-  ) {
-    let n = `\n\n__Shuffle ${
-      classes[charInfo.characterClass][1]
-    }:${noBreakSpace.repeat()}**${
-      charInfo.soloShuffleSpec2Rating
-    }**__`.length;
-    description += `\n\n__Shuffle ${
-      classes[charInfo.characterClass][1]
-    }:${noBreakSpace.repeat(maxLengt - n)}**${
-      charInfo.soloShuffleSpec2Rating
-    }**__`;
-  }
-  if (
-    charInfo.soloShuffleSpec3Rating != null &&
-    charInfo.soloShuffleSpec3Rating != undefined
-  ) {
-    let n = `\n\n__Shuffle ${
-      classes[charInfo.characterClass][2]
-    }:${noBreakSpace.repeat()}**${
-      charInfo.soloShuffleSpec3Rating
-    }**__`.length;
-    description += `\n\n__Shuffle ${
-      classes[charInfo.characterClass][2]
-    }:${noBreakSpace.repeat(maxLengt - n)}**${
-      charInfo.soloShuffleSpec3Rating
-    }**__`;
-  }
-  if (
-    charInfo.soloShuffleSpec4Rating != null &&
-    charInfo.soloShuffleSpec4Rating != undefined
-  ) {
-    let n = `\n\n__Shuffle ${
-      classes[charInfo.characterClass][3]
-    }:${noBreakSpace.repeat()}**${
-      charInfo.soloShuffleSpec4Rating
-    }**__`.length;
-    description += `\n\n__Shuffle ${
-      classes[charInfo.characterClass][3]
-    }:${noBreakSpace.repeat(maxLengt - n)}**${
-      charInfo.soloShuffleSpec4Rating
-    }**__`;
-  }
-  return description
+
+  return description;
 }
+
+module.exports = {createWaitingForReviewMessage};

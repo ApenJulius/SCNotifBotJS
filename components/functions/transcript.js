@@ -1,6 +1,5 @@
 const fs = require("fs");
 const classes = require("../../classes.json");
-const bot = require("../../src/botMain");
 const regex = /\*\*(https:\/\/.*?)\*\*/g;
 async function createTranscript(channel, ticket, charInfo = null) {
   let ticketMessages = await fetchTicketMessages(channel);
@@ -283,7 +282,7 @@ async function createHTMLfile(ticket, HTMLContent) {
   });
   return filePath;
 }
-async function sendTranscript(filePath, transcriptChannel) {
+async function sendTranscript(filePath, transcriptChannel, bot) {
   if (typeof transcriptChannel === "string") {
     transcriptChannel = await bot.channels.fetch(transcriptChannel);
   }
