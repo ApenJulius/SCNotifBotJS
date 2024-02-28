@@ -58,6 +58,7 @@ module.exports = {
             }
             if (interaction.customId.split("-")[0] == "claimsubmission") {
                 // Begin claim handling
+                cLog(["Claiming review nr: ",interaction.customId.split("-")[1],],{ guild: interaction.guild, subProcess: "buttonClick" });
                 bot.emit("claimReview", interaction, server, interaction.customId.split("-")[1]);
             }
             if (interaction.customId.split("-")[0] == "rejectsubmission") {

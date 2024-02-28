@@ -39,10 +39,7 @@ module.exports = {
        let newChannel
         let parentCategory = server[mode].reviewCategoryId
         try {
-          newChannel = await interaction.guild.channels.create({
-            parent:parentCategory,
-            name:`review-${submissionNumber}`,
-            permissionOverwrites: [
+          newChannel = await createChannel(interaction, parentCategory, `review-${submissionNumber}`, [
                 {
                     id: interaction.guild.id, // everyone in server (not admin)
                     deny: [PermissionsBitField.Flags.ViewChannel],
@@ -59,13 +56,13 @@ module.exports = {
                   id: interaction.user.id, // One that claimed
                   allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.ManageChannels],
               },
-            ],
-            
+            ])
+        await interaction.reply({content:"Submission Claimed", ephemeral:true}).catch(err => {
+          cLog(["FAILED REPLYING AFTER CHANNEL CREATION\n" + err.name +" "+ err.message], {subProcess:"ClaimReview", guild:interaction.guild})
         })
-        await interaction.reply({content:"Submission Claimed", ephemeral:true})
-        cLog([`Submission ${submissionNumber} claimed`], {subProcess:"ClaimValReview", guild:interaction.guild})
+        cLog([`Submission ${submissionNumber} claimed`], {subProcess:"ClaimReview", guild:interaction.guild})
         } catch(err) {
-          cLog([err.name +" "+ err.message], {subProcess:"ClaimValReview", guild:interaction.guild})
+          cLog([err.name +" "+ err.message], {subProcess:"ClaimReview", guild:interaction.guild})
           try {
             newChannel = await interaction.guild.channels.create({
               parent:parentCategory,
@@ -111,3 +108,16 @@ module.exports = {
         await interaction.message.delete()
     },
 };
+
+async function createChannel(interaction, parentCategory, name, permissionOverwrites) {
+  try {
+    return await interaction.guild.channels.create({
+      parent: parentCategory,
+      name,
+      permissionOverwrites,
+    });
+  } catch (err) {
+    cLog([err.name + " " + err.message], { subProcess: "CreateChannel", guild: interaction.guild });
+    throw err;
+  }
+}
