@@ -84,13 +84,16 @@ module.exports = {
               
           })
           try {
+            cLog(["created and overwriting channel attempt 2: " + submissionNumber], {subProcess:"ClaimReview", guild:interaction.guild})
             await newChannel.permissionOverwrites.edit(reviewHistory.userID, { ViewChannel: true });
             await interaction.reply({content:"Submission Claimed and user was added after failing once!", ephemeral:true})
           } catch(err) {
+            cLog(["submission claimed, but user not added: " + submissionNumber], {subProcess:"ClaimReview", guild:interaction.guild})
             await interaction.reply({content:"Submission Claimed, but user was not added!", ephemeral:true})
           }
           } catch(err){
             console.log(err)
+            cLog(["Failed to create channel twice: " + submissionNumber], {subProcess:"ClaimReview", guild:interaction.guild})
             await interaction.reply({content:"Failed to create channel twice", ephemeral:true})
             return
           }
